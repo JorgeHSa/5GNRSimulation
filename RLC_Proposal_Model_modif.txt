@@ -1,0 +1,146 @@
+format 8 
+factor on 
+
+bind 
+p   0.97
+n   20
+max_ret   5
+window_size   10
+end
+
+func g1() 
+if (#(SR_Window) == 0)
+  1
+else
+  0
+end
+
+end
+func f3() 
+if (#(SR_Window) > 1)
+  #(SR_Window)
+else
+  1
+end
+
+end
+func f2() 
+if (#(PMax_Retrans) > 1)
+  #(PMax_Retrans)
+else
+  1
+end
+
+end
+func f1() 
+if( #(Retrans_Buffer) > 1)
+  #(Retrans_Buffer)
+else
+  1
+end
+
+end
+func g3() 
+if ((#(PMax_Retrans)<max_ret) and (#(SR_Window)==0) and (#(Retrans_Buffer)==0))
+  1
+else
+  0
+end
+end
+
+
+func f_traffic() 
+if( (#(Buffer) + #(PHeader) ) < n)
+  1
+else
+  0
+end
+
+end
+func g2() 
+if ( #(PMax_Retrans) < max_ret)
+  0
+else
+  1
+end
+
+end
+func f_window() 
+if(( #(SR_Window) + #(Retrans_Buffer)) < window_size)
+  1
+else
+  0
+end
+
+end
+
+
+srn AM_Proposal 
+  * == PLACE == 
+  Buffer 0
+  PHeader 0
+  SR_Window 0
+  Retrans_Buffer 0
+  PMax_Retrans 0
+  end
+  * == Timed Transitions == 
+  Traffic ind 1.0 guard f_traffic()
+  THeader ind 4.999999999999996e7
+  TACK ind 9.699999999999993e7
+  TNACK ind 3.0000000000000005e6
+  end
+  * == Immediate Transitions ==  
+  t1 ind 0.5 guard f_window() priority 10 
+  t2 ind 0.5 guard g1() priority 10 
+  TDiscard ind 0.5 guard g2() priority 10 
+  t3 ind 0.5 guard g3() priority 10 
+  end
+  * == ARC == 
+  * Input Arcs 
+  Buffer THeader 1
+  PHeader t1 1
+  SR_Window TACK 1
+  SR_Window TNACK 1
+  Retrans_Buffer t2 f1() 
+  PMax_Retrans TDiscard f2() 
+  SR_Window TDiscard f3() 
+  PMax_Retrans t3 f2() 
+  end
+  * Output Arcs 
+  Traffic Buffer 1
+  THeader PHeader 1
+  t1 SR_Window 1
+  TNACK Retrans_Buffer 1
+  t2 SR_Window f1() 
+  t2 PMax_Retrans 1
+  end
+  * Inhibtor Arcs 
+end
+
+
+echo **************************************************************************** 
+echo *********  Outputs asked for the model: AM_Proposal ************** 
+
+
+echo Steady-state average number of tokens in Buffer 
+expr etok(AM_Proposal, Buffer)
+
+echo Steady-state throughput for Traffic 
+expr tput(AM_Proposal, Traffic)
+
+echo Steady-state throughput for TACK 
+expr tput(AM_Proposal, TACK)
+
+echo Steady-state average number of tokens in SR_Window 
+expr etok(AM_Proposal, SR_Window)
+
+echo Steady-state throughput for THeader 
+expr tput(AM_Proposal, THeader)
+
+echo Steady-state average number of tokens in Retrans_Buffer 
+expr etok(AM_Proposal, Retrans_Buffer)
+
+echo Steady-state throughput for TNACK 
+expr tput(AM_Proposal, TNACK)
+
+end
